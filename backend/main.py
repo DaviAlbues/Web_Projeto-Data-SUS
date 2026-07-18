@@ -93,14 +93,21 @@ def aplicar_filtros_pandas(municipio, periodo, faixa_etaria, mes, dia_inicio, di
 
 @app.get("/api/resumo-mortalidade")
 def get_resumo(municipio: str = "todos", periodo: str = "todos", faixa_etaria: str = "todas", mes: str = "todos", dia_inicio: str = "todos", dia_fim: str = "todos", sexo: str = "todos", causa: str = "todas"):
+    # Aplica a triagem
     df_filtrado = aplicar_filtros_pandas(municipio, periodo, faixa_etaria, mes, dia_inicio, dia_fim, sexo, causa)
     
-    obitos_por_ano = df_filtrado['ANO_OBITO'].value_counts().sort_index().to_dict()
-    anos_completos = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
-    valores = [obitos_por_ano.get(ano, 0) for ano in anos_completos]
+    # Conta os óbitos por ano e ordena pelo ano
+    obitos_por_ano = df_filtrado['ANO_OBITO'].value_counts().sort_index()
+    
+    # Se não houver dados, retorna listas vazias para não quebrar o gráfico
+    if obitos_por_ano.empty:
+        return {"anos": [], "obitos": []}
 
-    return {"anos": anos_completos, "obitos": valores}
-
+    # Retorna apenas os anos que existem no filtro aplicado
+    return {
+        "anos": obitos_por_ano.index.tolist(),
+        "obitos": obitos_por_ano.tolist()
+    }
 @app.get("/api/dados-brutos")
 def get_dados_brutos(municipio: str = "todos", periodo: str = "todos", faixa_etaria: str = "todas", mes: str = "todos", dia_inicio: str = "todos", dia_fim: str = "todos", sexo: str = "todos", causa: str = "todas", limite: int = 150):
     df_filtrado = aplicar_filtros_pandas(municipio, periodo, faixa_etaria, mes, dia_inicio, dia_fim, sexo, causa)
