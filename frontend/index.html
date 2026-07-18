@@ -274,14 +274,14 @@
                 
                 atualizarTagsDeFiltro();
 
-                const resGrafico = await fetch(`api/resumo-mortalidade${parametros}`);
+                const resGrafico = await fetch(`/api/resumo-mortalidade${parametros}`);
                 const dadosGrafico = await resGrafico.json();
                 
                 mortalidadeChart.data.labels = dadosGrafico.anos;
                 mortalidadeChart.data.datasets[0].data = dadosGrafico.obitos;
                 mortalidadeChart.update();
 
-                const resTabela = await fetch(`api/dados-brutos${parametros}`);
+                const resTabela = await fetch(`/api/dados-brutos${parametros}`);
                 const dadosTabela = await resTabela.json();
                 
                 const corpoTabela = document.getElementById('corpoTabela');
@@ -320,7 +320,10 @@
             );
         });
 
-        atualizarDashboard();
+    // Simula um clique invisível no botão logo que a tela termina de carregar
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('btnFiltro').click();
+        });
     </script>
 </body>
 </html>
