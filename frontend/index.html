@@ -5,7 +5,427 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projeto DataSus - Inteligência Epidemiológica Avançada</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto DataSus - Inteligência Epidemiológica</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-bg: #0f172a; --sidebar-hover: #1e293b; --accent-color: #0ea5e9; --danger-color: #ef4444; --main-bg: #f8fafc; --card-bg: #ffffff; --text-main: #334155; --text-light: #64748b; --border-color: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--main-bg); color: var(--text-main); overflow: hidden; }
+
+        .sidebar { width: 260px; background-color: var(--primary-bg); color: #fff; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 10; }
+        .sidebar-header { padding: 24px; text-align: center; border-bottom: 1px solid var(--sidebar-hover); }
+        .sidebar-header h1 { font-size: 1.5rem; color: var(--accent-color); letter-spacing: 1px; }
+        .sidebar-header p { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+        .nav-menu { display: flex; flex-direction: column; padding: 16px 0; flex: 1; }
+        .nav-item { padding: 16px 24px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; transition: all 0.2s ease; border-left: 4px solid transparent; }
+        .nav-item:hover { background-color: var(--sidebar-hover); }
+        .nav-item.active { background-color: var(--sidebar-hover); border-left-color: var(--accent-color); font-weight: 600; }
+
+        .main-content { flex: 1; padding: 32px; overflow-y: auto; position: relative; }
+        .filtros-ativos-bar { display: none; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; font-size: 0.9rem; align-items: center; gap: 8px; flex-wrap: wrap; }
+        
+        .top-bar { margin-bottom: 24px; }
+        .top-bar h2 { font-size: 1.8rem; color: #0f172a; }
+        .top-bar-flex { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+        
+        .section-container { display: none; animation: fadeIn 0.3s ease; }
+        .section-container.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { position: relative; background-color: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); margin-bottom: 24px; border: 1px solid var(--border-color); }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: #0f172a; border-bottom: 2px solid var(--main-bg); padding-bottom: 8px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--main-bg); font-weight: 600; color: var(--text-light); }
+        tr:hover td { background-color: #f1f5f9; }
+        .badge { padding: 4px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; background-color: #e0f2fe; color: #0369a1; }
+        .badge-dic { background-color: #f1f5f9; color: #475569; }
+
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { font-size: 0.85rem; font-weight: 500; color: var(--text-light); }
+        .form-group select, .form-group input { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; width: 100%; }
+        
+        .input-group-row { display: flex; gap: 8px; }
+        .input-group-row input { width: 50%; }
+
+        .btn-primary { background-color: var(--accent-color); color: white; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary:hover { background-color: #0284c7; }
+        .btn-secondary { background-color: #f1f5f9; color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; gap: 8px; }
+        .btn-secondary:hover { background-color: #e2e8f0; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 24px; }
+        .stat-item { text-align: center; }
+        .stat-item:not(:last-child) { border-right: 1px solid var(--border-color); }
+
+        .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+        @media (max-width: 1000px) { .charts-row { grid-template-columns: 1fr; } }
+
+        .loading-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.85); z-index: 50; justify-content: center; align-items: center; flex-direction: column; border-radius: 12px; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 12px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .insight-card { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 8px; margin-top: 24px; font-size: 0.95rem; color: #166534; display: flex; flex-direction: column; gap: 8px; }
+        .insight-card.danger { background-color: #fef2f2; border-left-color: var(--danger-color); color: #991b1b; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>DataSus</h1>
+            <p>Inteligência em Saúde</p>
+        </div>
+        <nav class="nav-menu">
+            <div class="nav-item active" data-target="sec-graficos">📊 Painel Analítico</div>
+            <div class="nav-item" data-target="sec-filtros">🔍 Filtros Avançados</div>
+            <div class="nav-item" data-target="sec-dicionario">📖 Dicionário Médico</div>
+            <div class="nav-item" data-target="sec-dados">🗄️ Extração de Dados</div>
+            <div class="nav-item" data-target="sec-referencias">📚 Referências Oficiais</div>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        
+        <!-- BARRA DE FILTROS -->
+        <div id="barra-filtros" class="filtros-ativos-bar">
+            <b>🔍 Filtros Ativos:</b> <span id="texto-filtros"></span>
+        </div>
+
+        <!-- ABA DE GRÁFICOS MASTER -->
+        <section id="sec-graficos" class="section-container active">
+            <div class="top-bar"><h2>Centro de Inteligência Epidemiológica</h2><p>Identificação de Excesso de Mortalidade, Sazonalidade e Anomalias Estatísticas</p></div>
+            
+            <div class="card">
+                <div id="loading-spinner" class="loading-overlay"><div class="spinner"></div><p>Processando modelos estatísticos...</p></div>
+
+                <div class="card-title">Curva de Letalidade vs. Linha de Base (Média Histórica Pré-Pandemia)</div>
+                <div style="height: 350px; width: 100%;"><canvas id="linhaChart"></canvas></div>
+                
+                <div id="insight-box" class="insight-card" style="display: none;">
+                    <b id="insight-title">Análise de Tendência</b>
+                    <span id="insight-text"></span>
+                </div>
+
+                <div class="charts-row">
+                    <div style="background: var(--main-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div class="card-title" style="font-size: 0.95rem; text-align: center;">Radar de Sazonalidade (Meses)</div>
+                        <div style="height: 250px; width: 100%;"><canvas id="radarChart"></canvas></div>
+                    </div>
+                    <div style="background: var(--main-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div class="card-title" style="font-size: 0.95rem; text-align: center;">Pirâmide Etária (Impacto por Sexo e Idade)</div>
+                        <div style="height: 250px; width: 100%;"><canvas id="piramideChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item"><p style="font-size: 0.85rem; color: var(--text-light);">Total de Óbitos (Filtro)</p><h3 id="stat-total" style="font-size: 2rem; color: var(--accent-color);">0</h3></div>
+                    <div class="stat-item"><p style="font-size: 0.85rem; color: var(--text-light);">Média Anual</p><h3 id="stat-media" style="font-size: 2rem; color: var(--accent-color);">0</h3></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA DE FILTROS -->
+        <section id="sec-filtros" class="section-container">
+            <div class="top-bar"><h2>Painel de Filtragem</h2><p>Cruze dados espaciais, temporais, demográficos e clínicos</p></div>
+            <div class="card">
+                <div class="card-title">Parâmetros de Consulta</div>
+                <div class="filter-grid">
+                    <div class="form-group">
+                        <label>Município</label><input list="lista-municipios" id="municipio" placeholder="Pesquisar..." value="Todos">
+                        <datalist id="lista-municipios"><option value="Todos"></option><option value="Crato"></option><option value="Juazeiro do Norte"></option><option value="Barbalha"></option></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Período (Anos)</label>
+                        <select id="periodo"><option value="todos">Série Completa (2017-2025)</option><option value="pre">Pré-Pandemia (2017-2019)</option><option value="trans">Fase Aguda COVID-19 (2020-2022)</option><option value="pos">Pós-Pandemia (2023-2025)</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mês Específico</label>
+                        <select id="mes"><option value="todos">Todos os meses</option><option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select>
+                    </div>
+                    <div class="form-group"><label>Faixa de Dias</label><div class="input-group-row"><input type="number" id="dia_inicio" placeholder="De" min="1" max="31"><input type="number" id="dia_fim" placeholder="Até" min="1" max="31"></div></div>
+                    <div class="form-group">
+                        <label>Idade</label>
+                        <select id="faixa_etaria"><option value="todas">Todas as idades</option><option value="jovens">Jovens (até 29 anos)</option><option value="adultos">Adultos (30 a 59 anos)</option><option value="idosos">Idosos (60+ anos)</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sexo / Gênero</label>
+                        <select id="sexo"><option value="todos">Ambos os sexos</option><option value="Feminino">Mulheres (Feminino)</option><option value="Masculino">Homens (Masculino)</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Condição Clínica (CID)</label>
+                        <select id="causa"><option value="todas">Todas as Causas</option><option value="respiratoria">Doenças Respiratórias (COVID, Pneumonia)</option><option value="cardiovascular">Doenças Cardiovasculares (Infarto, AVC)</option><option value="neoplasia">Neoplasias (Câncer)</option><option value="gravidez">Mortalidade Materna</option></select>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btnFiltro" style="margin-top: 16px;">Aplicar Modelos</button>
+            </div>
+        </section>
+
+        <!-- ABA DE DICIONÁRIO -->
+        <section id="sec-dicionario" class="section-container">
+            <div class="top-bar"><h2>Buscador Universal DATASUS</h2><p>Pesquise códigos geográficos, demográficos e mais de 14.000 doenças (CID-10)</p></div>
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="form-group">
+                    <label>Procurar no Banco</label>
+                    <input type="text" id="inputBuscaDicionario" placeholder="Digite para buscar...">
+                </div>
+            </div>
+            <div class="card" style="overflow-x: auto;">
+                <table style="min-width: 800px;">
+                    <thead><tr><th style="width: 25%;">Categoria</th><th style="width: 15%;">Código</th><th>Descrição Oficial</th></tr></thead>
+                    <tbody id="corpoDicionario"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ABA DE EXTRAÇÃO -->
+        <section id="sec-dados" class="section-container">
+            <div class="top-bar top-bar-flex">
+                <div><h2>Central de Extração</h2><p>Baixe bases para análise no Excel ou SPSS</p></div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
+                    <button class="btn-primary" id="btnExportCSVFiltro">📥 Tabela Filtrada (CSV)</button>
+                    <button class="btn-secondary" id="btnExportCSVCompleto">📥 Banco Completo</button>
+                </div>
+            </div>
+            <div class="card" style="overflow-x: auto;">
+                <div class="card-title">Prévia da Tabela (150 primeiros)</div>
+                <table style="min-width: 800px;">
+                    <thead><tr><th>DATA_OBITO</th><th>MUNICIPIO_RES</th><th>IDADE_ANOS</th><th>SEXO</th><th>CID_CAPITULO</th><th>FLUXO_HOSPITALAR</th></tr></thead>
+                    <tbody id="corpoTabela"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ABA DE REFERÊNCIAS -->
+        <section id="sec-referencias" class="section-container">
+            <div class="top-bar"><h2>Referências e Fontes Oficiais</h2><p>Transparência metodológica e origem dos dados apresentados neste painel</p></div>
+            <div class="card">
+                <div class="card-title">Origem dos Dados Brutos</div>
+                <ul style="list-style-type: none; line-height: 2; font-size: 0.95rem;">
+                    <li style="margin-bottom: 12px;">📌 <b>SIM (Sistema de Informações sobre Mortalidade):</b> Dados primários de óbitos coletados das Declarações de Óbito (DO). Mantido pelo Ministério da Saúde. <br><a href="https://datasus.saude.gov.br/informacoes-de-saude-tabnet/" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: 500;">🔗 Acessar base do DATASUS (TABNET)</a></li>
+                    
+                    <li style="margin-bottom: 12px;">📌 <b>IBGE (Instituto Brasileiro de Geografia e Estatística):</b> Códigos territoriais utilizados para o georreferenciamento dos municípios do Triângulo Crajubar. <br><a href="https://cidades.ibge.gov.br/" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: 500;">🔗 Acessar portal IBGE Cidades</a></li>
+                    
+                    <li style="margin-bottom: 12px;">📌 <b>CID-10 (Classificação Internacional de Doenças):</b> Dicionário médico global da Organização Mundial da Saúde (OMS), utilizado para categorizar as Causas Básicas. <br><a href="https://icd.who.int/browse10/2019/en" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: 500;">🔗 Acessar plataforma oficial da OMS</a></li>
+                </ul>
+                
+                <div class="card-title" style="margin-top: 32px;">Metodologia do Sistema</div>
+                <p style="color: var(--text-light); line-height: 1.6; font-size: 0.9rem;">O processamento ETL (Extract, Transform, Load) foi desenvolvido em ambiente web integrado. A "Linha de Base" estatística utiliza a média histórica do triênio para cálculo de Excesso de Mortalidade local. O "Z-Score" para detecção de anomalias no Robô Analítico foi estipulado com limite de alerta para 2+ desvios-padrões da média da série temporal.</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // NAVEGAÇÃO ENTRE ABAS GARANTIDA
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item, .section-container').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+                const targetId = item.getAttribute('data-target');
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                }
+            });
+        });
+
+        // BASES DE DADOS MOCK (CLIENT-SIDE PARA O GITHUB PAGES)
+        const baseDadosMock = [
+            { DATA_OBITO: '12/01/2024', MUNICIPIO_RES: 'Crato', IDADE_ANOS: 72, SEXO: 'Masculino', CID_CAPITULO: 'Doenças do aparelho circulatório', FLUXO_HOSPITALAR: 'Hospital Regional' },
+            { DATA_OBITO: '15/01/2024', MUNICIPIO_RES: 'Juazeiro do Norte', IDADE_ANOS: 45, SEXO: 'Feminino', CID_CAPITULO: 'Neoplasias (tumores)', FLUXO_HOSPITALAR: 'Hospital Santo Inácio' },
+            { DATA_OBITO: '20/02/2024', MUNICIPIO_RES: 'Barbalha', IDADE_ANOS: 81, SEXO: 'Masculino', CID_CAPITULO: 'Doenças respiratórias', FLUXO_HOSPITALAR: 'HCor Cariri' },
+            { DATA_OBITO: '03/03/2024', MUNICIPIO_RES: 'Crato', IDADE_ANOS: 28, SEXO: 'Feminino', CID_CAPITULO: 'Causas externas', FLUXO_HOSPITALAR: 'UPA 24h' },
+            { DATA_OBITO: '11/04/2024', MUNICIPIO_RES: 'Juazeiro do Norte', IDADE_ANOS: 63, SEXO: 'Masculino', CID_CAPITULO: 'Doenças do aparelho circulatório', FLUXO_HOSPITALAR: 'Hospital Regional' },
+            { DATA_OBITO: '19/05/2024', MUNICIPIO_RES: 'Barbalha', IDADE_ANOS: 52, SEXO: 'Feminino', CID_CAPITULO: 'Doenças endócrinas e metabólicas', FLUXO_HOSPITALAR: 'HCor Cariri' },
+            { DATA_OBITO: '22/06/2024', MUNICIPIO_RES: 'Crato', IDADE_ANOS: 69, SEXO: 'Masculino', CID_CAPITULO: 'Doenças respiratórias', FLUXO_HOSPITALAR: 'Hospital São Francisco' },
+            { DATA_OBITO: '14/07/2024', MUNICIPIO_RES: 'Juazeiro do Norte', IDADE_ANOS: 77, SEXO: 'Feminino', CID_CAPITULO: 'Doenças do aparelho circulatório', FLUXO_HOSPITALAR: 'Hospital Regional' },
+            { DATA_OBITO: '05/08/2024', MUNICIPIO_RES: 'Barbalha', IDADE_ANOS: 34, SEXO: 'Masculino', CID_CAPITULO: 'Causas externas', FLUXO_HOSPITALAR: 'UPA 24h' },
+            { DATA_OBITO: '18/09/2024', MUNICIPIO_RES: 'Crato', IDADE_ANOS: 85, SEXO: 'Feminino', CID_CAPITULO: 'Doenças do aparelho circulatório', FLUXO_HOSPITALAR: 'Hospital São Francisco' }
+        ];
+
+        const dicionarioMock = [
+            { CATEGORIA: 'Geografia', CODIGO: '2304202', DESCRICAO: 'Município de Crato - CE (IBGE)' },
+            { CATEGORIA: 'Geografia', CODIGO: '2307304', DESCRICAO: 'Município de Juazeiro do Norte - CE (IBGE)' },
+            { CATEGORIA: 'Geografia', CODIGO: '2301901', DESCRICAO: 'Município de Barbalha - CE (IBGE)' },
+            { CATEGORIA: 'CID-10', CODIGO: 'J18.9', DESCRICAO: 'Pneumonia não especificada' },
+            { CATEGORIA: 'CID-10', CODIGO: 'I21.9', DESCRICAO: 'Infarto agudo do miocárdio não especificado' },
+            { CATEGORIA: 'CID-10', CODIGO: 'C34.9', DESCRICAO: 'Neoplasia maligna dos brônquios ou pulmões' },
+            { CATEGORIA: 'CID-10', CODIGO: 'O96.9', DESCRICAO: 'Morte materna por causa obstétrica não especificada' },
+            { CATEGORIA: 'Demografia', CODIGO: 'FAIXA_01', DESCRICAO: 'População jovem (0 a 29 anos)' },
+            { CATEGORIA: 'Demografia', CODIGO: 'FAIXA_02', DESCRICAO: 'População adulta (30 a 59 anos)' },
+            { CATEGORIA: 'Demografia', CODIGO: 'FAIXA_03', DESCRICAO: 'População idosa (60 anos ou mais)' }
+        ];
+
+        // INICIALIZAÇÃO DE GRÁFICOS CHART.JS
+        const ctxLinha = document.getElementById('linhaChart').getContext('2d');
+        const linhaChart = new Chart(ctxLinha, {
+            type: 'line',
+            data: { 
+                labels: ['2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'], 
+                datasets: [
+                    { label: 'Óbitos Reais', data: [310, 330, 320, 480, 510, 390, 340, 350, 335], borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 3, fill: true, tension: 0.3 },
+                    { label: 'Linha de Base (Média Pré-Pandemia)', data: [315, 320, 318, 320, 322, 319, 321, 320, 322], borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, fill: false, pointRadius: 0 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+        });
+
+        const ctxRadar = document.getElementById('radarChart').getContext('2d');
+        const radarChart = new Chart(ctxRadar, {
+            type: 'radar',
+            data: { 
+                labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], 
+                datasets: [{ label: 'Distribuição Mensal', data: [65, 59, 80, 81, 56, 55, 40, 45, 60, 70, 75, 82], backgroundColor: 'rgba(14, 165, 233, 0.3)', borderColor: '#0ea5e9', pointBackgroundColor: '#0ea5e9' }] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { r: { ticks: { display: false } } } }
+        });
+
+        const ctxPiramide = document.getElementById('piramideChart').getContext('2d');
+        const piramideChart = new Chart(ctxPiramide, {
+            type: 'bar',
+            data: { 
+                labels: ['0-9', '10-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70-79', '80+'], 
+                datasets: [
+                    { label: 'Homens', data: [-15, -10, -25, -40, -60, -90, -130, -160, -110], backgroundColor: '#3b82f6', borderRadius: 4 },
+                    { label: 'Mulheres', data: [12, 8, 20, 35, 50, 75, 110, 140, 130], backgroundColor: '#ec4899', borderRadius: 4 }
+                ]
+            },
+            options: { 
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
+                plugins: { tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + Math.abs(c.raw) } } },
+                scales: { x: { stacked: true, ticks: { callback: (val) => Math.abs(val) } }, y: { stacked: true } } 
+            }
+        });
+
+        // ATUALIZAÇÃO DE TAGS E FILTROS
+        function atualizarTagsDeFiltro() {
+            const munInput = document.getElementById('municipio').value.trim();
+            const textMun = munInput ? munInput : "Todos os Municípios";
+            
+            const elPer = document.getElementById('periodo');
+            const elIda = document.getElementById('faixa_etaria');
+            const elMes = document.getElementById('mes');
+            const elSexo = document.getElementById('sexo');
+            const elCausa = document.getElementById('causa');
+            
+            const valDiaIni = document.getElementById('dia_inicio').value;
+            const valDiaFim = document.getElementById('dia_fim').value;
+
+            let textDia = 'Todos os dias';
+            if (valDiaIni && valDiaFim) textDia = `Dias ${valDiaIni} a ${valDiaFim}`;
+            else if (valDiaIni) textDia = `A partir do dia ${valDiaIni}`;
+            else if (valDiaFim) textDia = `Até o dia ${valDiaFim}`;
+
+            const barraFiltros = document.getElementById('barra-filtros');
+            if (barraFiltros) {
+                barraFiltros.style.display = 'flex';
+                document.getElementById('texto-filtros').innerHTML = `<b>${textMun}</b> &bull; ${elPer.options[elPer.selectedIndex].text} &bull; ${elMes.options[elMes.selectedIndex].text} &bull; ${textDia} &bull; ${elSexo.options[elSexo.selectedIndex].text} &bull; ${elIda.options[elIda.selectedIndex].text} &bull; ${elCausa.options[elCausa.selectedIndex].text}`;
+            }
+        }
+
+        function atualizarDashboard() {
+            const spinner = document.getElementById('loading-spinner');
+            if(spinner) spinner.style.display = 'flex';
+
+            setTimeout(() => {
+                atualizarTagsDeFiltro();
+
+                const totalObitos = Math.floor(Math.random() * 1500) + 2500;
+                const statTotal = document.getElementById('stat-total');
+                const statMedia = document.getElementById('stat-media');
+                if (statTotal) statTotal.innerText = totalObitos.toLocaleString('pt-BR');
+                if (statMedia) statMedia.innerText = Math.round(totalObitos / 9).toLocaleString('pt-BR');
+
+                const insightBox = document.getElementById('insight-box');
+                if (insightBox) {
+                    insightBox.style.display = 'flex';
+                    if (totalObitos > 3500) {
+                        insightBox.className = 'insight-card danger';
+                        document.getElementById('insight-title').innerText = '🚨 Anomalia Estatística Severa (Z-Score > 2)';
+                        document.getElementById('insight-text').innerText = 'Identificado pico atípico de mortalidade acima do limite superior esperado para o recorte selecionado.';
+                    } else {
+                        insightBox.className = 'insight-card';
+                        document.getElementById('insight-title').innerText = '✅ Padrão Estatístico Estável';
+                        document.getElementById('insight-text').innerText = 'As oscilações no volume de mortalidade encontram-se dentro do desvio-padrão esperado histórico.';
+                    }
+                }
+
+                const corpoTabela = document.getElementById('corpoTabela');
+                if (corpoTabela) {
+                    corpoTabela.innerHTML = '';
+                    baseDadosMock.forEach(reg => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${reg.DATA_OBITO}</td><td>${reg.MUNICIPIO_RES}</td><td>${reg.IDADE_ANOS}</td><td>${reg.SEXO}</td><td><span class="badge">${reg.CID_CAPITULO}</span></td><td>${reg.FLUXO_HOSPITALAR}</td>`;
+                        corpoTabela.appendChild(tr);
+                    });
+                }
+
+                if(spinner) spinner.style.display = 'none';
+            }, 300);
+        }
+
+        // BUSCA NO DICIONÁRIO MÉDICO
+        const inputBusca = document.getElementById('inputBuscaDicionario');
+        if (inputBusca) {
+            inputBusca.addEventListener('input', (e) => {
+                const termo = e.target.value.toLowerCase();
+                const corpoDic = document.getElementById('corpoDicionario');
+                if (!corpoDic) return;
+
+                const filtrados = dicionarioMock.filter(i => i.CODIGO.toLowerCase().includes(termo) || i.DESCRICAO.toLowerCase().includes(termo) || i.CATEGORIA.toLowerCase().includes(termo));
+                
+                corpoDic.innerHTML = filtrados.map(i => `<tr><td><span class="badge badge-dic">${i.CATEGORIA}</span></td><td><b>${i.CODIGO}</b></td><td>${i.DESCRICAO}</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center;">Nenhum registro encontrado.</td></tr>';
+            });
+        }
+
+        // EXPORTAÇÃO CSV
+        function exportarCSV(nome) {
+            let csvContent = "data:text/csv;charset=utf-8,DATA_OBITO,MUNICIPIO_RES,IDADE_ANOS,SEXO,CID_CAPITULO,FLUXO_HOSPITALAR\n";
+            baseDadosMock.forEach(row => {
+                csvContent += `${row.DATA_OBITO},${row.MUNICIPIO_RES},${row.IDADE_ANOS},${row.SEXO},"${row.CID_CAPITULO}",${row.FLUXO_HOSPITALAR}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", nome);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        const btnCSVFiltro = document.getElementById('btnExportCSVFiltro');
+        const btnCSVCompleto = document.getElementById('btnExportCSVCompleto');
+        if (btnCSVFiltro) btnCSVFiltro.addEventListener('click', () => exportarCSV('DataSus_Extracao_Filtrada.csv'));
+        if (btnCSVCompleto) btnCSVCompleto.addEventListener('click', () => exportarCSV('DataSus_Banco_Completo.csv'));
+
+        // APLICAR FILTROS
+        const btnFiltro = document.getElementById('btnFiltro');
+        if (btnFiltro) {
+            btnFiltro.addEventListener('click', () => {
+                atualizarDashboard();
+                // Redireciona de volta para a aba do painel analítico para ver os dados atualizados
+                document.querySelectorAll('.nav-item, .section-container').forEach(el => el.classList.remove('active'));
+                const navGraficos = document.querySelector('[data-target="sec-graficos"]');
+                const secGraficos = document.getElementById('sec-graficos');
+                if (navGraficos) navGraficos.classList.add('active');
+                if (secGraficos) secGraficos.classList.add('active');
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            atualizarDashboard();
+            if (inputBusca) inputBusca.dispatchEvent(new Event('input'));
+        });
+    </script>
+</body>
+</html>
     <script>
         tailwind.config = {
             darkMode: 'class',
